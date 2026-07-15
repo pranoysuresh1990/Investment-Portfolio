@@ -129,31 +129,38 @@ with tab_overview:
         bubble_df["Status"] = bubble_df["Unrealized P&L"].apply(
             lambda v: "Gaining" if v >= 0 else "Losing"
         )
-        bubble = (
-            alt.Chart(bubble_df)
-            .mark_circle(opacity=0.75, stroke="white", strokeWidth=1)
-            .encode(
-                x=alt.X("Unrealized P&L:Q", title="Unrealized P&L (₹)"),
-                y=alt.Y("Unrealized P&L %:Q", title="Unrealized P&L (%)"),
-                size=alt.Size(
-                    "Invested Value:Q", title="Invested Value (₹)", scale=alt.Scale(range=[50, 2000])
-                ),
-                color=alt.Color(
-                    "Status:N",
-                    scale=alt.Scale(domain=["Gaining", "Losing"], range=[GOOD, CRITICAL]),
-                    legend=alt.Legend(title=None),
-                ),
-                tooltip=[
-                    "Stock",
-                    alt.Tooltip("Invested Value:Q", format=",.0f", title="Invested (₹)"),
-                    alt.Tooltip("Unrealized P&L:Q", format=",.0f", title="P&L (₹)"),
-                    alt.Tooltip("Unrealized P&L %:Q", format=".1f", title="P&L %"),
-                ],
-            )
-            .properties(height=420)
-            .interactive()
+        bubble = alt.Chart(bubble_df).mark_circle(opacity=0.75, stroke="white", strokeWidth=1).encode(
+            x=alt.X("Unrealized P&L:Q", title="Unrealized P&L (₹)"),
+            y=alt.Y("Unrealized P&L %:Q", title="Unrealized P&L (%)"),
+            size=alt.Size(
+                "Invested Value:Q", title="Invested Value (₹)", scale=alt.Scale(range=[50, 2000])
+            ),
+            color=alt.Color(
+                "Status:N",
+                scale=alt.Scale(domain=["Gaining", "Losing"], range=[GOOD, CRITICAL]),
+                legend=alt.Legend(title=None),
+            ),
+            tooltip=[
+                "Stock",
+                alt.Tooltip("Invested Value:Q", format=",.0f", title="Invested (₹)"),
+                alt.Tooltip("Unrealized P&L:Q", format=",.0f", title="P&L (₹)"),
+                alt.Tooltip("Unrealized P&L %:Q", format=".1f", title="P&L %"),
+            ],
         )
-        st.altair_chart(bubble, use_container_width=True)
+        zero_x = (
+            alt.Chart(pd.DataFrame({"Unrealized P&L": [0]}))
+            .mark_rule(color="#898781", strokeWidth=1.5)
+            .encode(x="Unrealized P&L:Q")
+        )
+        zero_y = (
+            alt.Chart(pd.DataFrame({"Unrealized P&L %": [0]}))
+            .mark_rule(color="#898781", strokeWidth=1.5)
+            .encode(y="Unrealized P&L %:Q")
+        )
+        st.altair_chart(
+            (zero_x + zero_y + bubble).properties(height=420).interactive(),
+            use_container_width=True,
+        )
 
 with tab_current:
     if current.empty:
