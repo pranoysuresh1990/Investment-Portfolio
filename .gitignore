@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Personal financial data - never commit real holdings/transactions
+data/*.csv
+.streamlit/secrets.toml
