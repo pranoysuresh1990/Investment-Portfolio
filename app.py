@@ -149,7 +149,10 @@ with tab_overview:
             x=alt.X("Unrealized P&L:Q", title="Unrealized P&L (₹)"),
             y=alt.Y("Unrealized P&L %:Q", title="Unrealized P&L (%)"),
             size=alt.Size(
-                "Invested Value:Q", title="Invested Value (₹)", scale=alt.Scale(range=[50, 2000])
+                "Invested Value:Q",
+                title="Invested Value (₹)",
+                scale=alt.Scale(range=[50, 2000], zero=False),
+                legend=alt.Legend(format=",.0f"),
             ),
             color=alt.Color(
                 "Status:N",
