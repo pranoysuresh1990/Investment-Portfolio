@@ -18,6 +18,7 @@ SHEET_COLUMNS = {
     "realized_pl": "Realized Profit/Loss (Including Dividends)",
     "unrealized_pl_sheet": "Unrealized Profit/Loss",
     "pct_gain_loss": "% Gain/Loss (Including Dividends)",
+    "total_dividend": "Total Dividend",
     "roce": "ROCE (TTM)",
     "piotroski": "Piotroski F Score",
 }
@@ -74,6 +75,7 @@ def parse_portfolio(raw_df: pd.DataFrame) -> pd.DataFrame:
             "Realized P&L": _to_numeric(raw_df[SHEET_COLUMNS["realized_pl"]]),
             "Unrealized P&L (Sheet)": _to_numeric(raw_df[SHEET_COLUMNS["unrealized_pl_sheet"]]),
             "% Gain/Loss (Sheet)": _to_numeric(raw_df[SHEET_COLUMNS["pct_gain_loss"]]),
+            "Total Dividend": _to_numeric(raw_df[SHEET_COLUMNS["total_dividend"]]),
             "ROCE (TTM)": _to_numeric(raw_df[SHEET_COLUMNS["roce"]]),
             "Piotroski F Score": raw_df[SHEET_COLUMNS["piotroski"]],
         }

@@ -1,9 +1,13 @@
+import altair as alt
 import pandas as pd
 import streamlit as st
 
 from src.data_loader import closed_positions, current_holdings, parse_portfolio
 from src.prices import fetch_live_prices
 from src.sheets_client import load_worksheet
+
+GOOD = "#0ca30c"
+CRITICAL = "#d03b3b"
 
 st.set_page_config(page_title="My Portfolio Dashboard", layout="wide")
 st.title("📊 My Indian Stock Portfolio")
@@ -56,12 +60,7 @@ total_current_value = current["Current Value"].sum() if not current.empty else 0
 total_unrealized_pl = total_current_value - total_invested
 total_unrealized_pct = (total_unrealized_pl / total_invested * 100) if total_invested else 0
 total_realized_pl = portfolio["Realized P&L"].sum()
-
-col1, col2, col3, col4 = st.columns(4)
-col1.metric("Invested (current holdings)", f"₹{total_invested:,.0f}")
-col2.metric("Current Value", f"₹{total_current_value:,.0f}")
-col3.metric("Unrealized P&L", f"₹{total_unrealized_pl:,.0f}", f"{total_unrealized_pct:.1f}%")
-col4.metric("Realized P&L (all-time)", f"₹{total_realized_pl:,.0f}")
+total_dividend = portfolio["Total Dividend"].sum()
 
 
 def highlight_pl(val):
@@ -71,9 +70,90 @@ def highlight_pl(val):
     return f"background-color: {color}"
 
 
-tab_current, tab_closed = st.tabs(
-    [f"Current Holdings ({len(current)})", f"Closed Positions ({len(closed)})"]
+tab_overview, tab_current, tab_closed = st.tabs(
+    ["Overview", f"Current Holdings ({len(current)})", f"Closed Positions ({len(closed)})"]
 )
+
+with tab_overview:
+    if current.empty:
+        st.info("No current holdings to show.")
+    else:
+        m1, m2, m3, m4, m5 = st.columns(5)
+        m1.metric("Active Holdings", len(current))
+        m2.metric("Unrealized P&L", f"₹{total_unrealized_pl:,.0f}", f"{total_unrealized_pct:.1f}%")
+        m3.metric("Realized P&L (all-time)", f"₹{total_realized_pl:,.0f}")
+        m4.metric("Current Value of Holdings", f"₹{total_current_value:,.0f}")
+        m5.metric("Total Dividend (all-time)", f"₹{total_dividend:,.0f}")
+
+        st.markdown("#### Top Performing")
+        top_performing = current.nlargest(15, "Unrealized P&L %")
+        chart = (
+            alt.Chart(top_performing)
+            .mark_bar(color=GOOD, cornerRadiusTopLeft=4, cornerRadiusTopRight=4)
+            .encode(
+                x=alt.X("Stock:N", sort="-y", title=None, axis=alt.Axis(labelAngle=-45)),
+                y=alt.Y("Unrealized P&L %:Q", title="Unrealized P&L %"),
+                tooltip=[
+                    "Stock",
+                    alt.Tooltip("Unrealized P&L %:Q", format=".1f", title="P&L %"),
+                    alt.Tooltip("Unrealized P&L:Q", format=",.0f", title="P&L (₹)"),
+                ],
+            )
+            .properties(height=280)
+        )
+        st.altair_chart(chart, use_container_width=True)
+
+        st.markdown("#### Top Underperforming")
+        underperforming = current[current["Unrealized P&L"] < 0].nsmallest(15, "Unrealized P&L %")
+        if underperforming.empty:
+            st.caption("No underperforming holdings right now.")
+        else:
+            chart = (
+                alt.Chart(underperforming)
+                .mark_bar(color=CRITICAL, cornerRadiusBottomLeft=4, cornerRadiusBottomRight=4)
+                .encode(
+                    x=alt.X("Stock:N", sort="y", title=None, axis=alt.Axis(labelAngle=-45)),
+                    y=alt.Y("Unrealized P&L %:Q", title="Unrealized P&L %"),
+                    tooltip=[
+                        "Stock",
+                        alt.Tooltip("Unrealized P&L %:Q", format=".1f", title="P&L %"),
+                        alt.Tooltip("Unrealized P&L:Q", format=",.0f", title="P&L (₹)"),
+                    ],
+                )
+                .properties(height=280)
+            )
+            st.altair_chart(chart, use_container_width=True)
+
+        st.markdown("#### Investment vs. Performance")
+        bubble_df = current.copy()
+        bubble_df["Status"] = bubble_df["Unrealized P&L"].apply(
+            lambda v: "Gaining" if v >= 0 else "Losing"
+        )
+        bubble = (
+            alt.Chart(bubble_df)
+            .mark_circle(opacity=0.75, stroke="white", strokeWidth=1)
+            .encode(
+                x=alt.X("Unrealized P&L:Q", title="Unrealized P&L (₹)"),
+                y=alt.Y("Unrealized P&L %:Q", title="Unrealized P&L (%)"),
+                size=alt.Size(
+                    "Invested Value:Q", title="Invested Value (₹)", scale=alt.Scale(range=[50, 2000])
+                ),
+                color=alt.Color(
+                    "Status:N",
+                    scale=alt.Scale(domain=["Gaining", "Losing"], range=[GOOD, CRITICAL]),
+                    legend=alt.Legend(title=None),
+                ),
+                tooltip=[
+                    "Stock",
+                    alt.Tooltip("Invested Value:Q", format=",.0f", title="Invested (₹)"),
+                    alt.Tooltip("Unrealized P&L:Q", format=",.0f", title="P&L (₹)"),
+                    alt.Tooltip("Unrealized P&L %:Q", format=".1f", title="P&L %"),
+                ],
+            )
+            .properties(height=420)
+            .interactive()
+        )
+        st.altair_chart(bubble, use_container_width=True)
 
 with tab_current:
     if current.empty:
