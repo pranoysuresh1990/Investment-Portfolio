@@ -11,23 +11,34 @@ Open your sheet -> **Share** -> under "General access" choose
 Note: anyone who has this exact link can view your portfolio (no login
 needed). Don't post the link anywhere public.
 
-## 2. Local setup
+## 2. Run it on Streamlit Community Cloud (no install needed)
+
+1. Go to [share.streamlit.io](https://share.streamlit.io) and sign in with
+   your GitHub account.
+2. Click **New app**, pick this repository, pick the branch
+   `claude/portfolio-dashboard-india-cxqa7r`, and set the main file to
+   `app.py`.
+3. Optional but convenient: in **Advanced settings -> Secrets**, add:
+   ```toml
+   sheet_url = "https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID/edit"
+   ```
+   This pre-fills your sheet link so you don't have to paste it every visit.
+4. Click **Deploy**. You'll get a permanent URL you can bookmark and open
+   any time, on any device.
+5. In the app's **Settings -> Sharing** on Streamlit Cloud, you can restrict
+   who's allowed to view it (e.g. only your Google account) if you don't
+   want it fully public.
+
+It reads the `My Portfolio` tab, keeps only stocks you currently hold
+(Holding Quantity > 0), fetches live prices for each via `yfinance`, and
+shows a table with P&L highlighted green (gain) or red (loss).
+
+## Running locally instead (optional)
 
 ```bash
 pip install -r requirements.txt
-```
-
-## 3. Run it
-
-```bash
 streamlit run app.py
 ```
-
-This opens the dashboard in your browser. Paste your Google Sheet link into
-the box at the top. It reads the `My Portfolio` tab, keeps only stocks you
-currently hold (Holding Quantity > 0), fetches live prices for each via
-`yfinance`, and shows a table with P&L highlighted green (gain) or red
-(loss).
 
 ## Project structure
 
