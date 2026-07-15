@@ -43,9 +43,10 @@ if current.empty and closed.empty:
     st.warning("No stocks found in the 'My Portfolio' sheet.")
     st.stop()
 
+all_yf_tickers = tuple(sorted(portfolio["YF Ticker"].dropna().unique()))
+prices = fetch_live_prices(all_yf_tickers)
+
 if not current.empty:
-    yf_tickers = tuple(sorted(current["YF Ticker"].dropna().unique()))
-    prices = fetch_live_prices(yf_tickers)
     current = current.merge(prices, on="YF Ticker", how="left")
 
     used_fallback = current["Current Price"].isna() & current["Current Price (Sheet)"].notna()
@@ -54,6 +55,10 @@ if not current.empty:
     current["Current Value"] = current["Quantity"] * current["Current Price"]
     current["Unrealized P&L"] = current["Current Value"] - current["Invested Value"]
     current["Unrealized P&L %"] = (current["Unrealized P&L"] / current["Invested Value"]) * 100
+
+if not closed.empty:
+    closed = closed.merge(prices, on="YF Ticker", how="left")
+    closed["Current Price"] = closed["Current Price"].fillna(closed["Current Price (Sheet)"])
 
 total_invested = current["Invested Value"].sum() if not current.empty else 0
 total_current_value = current["Current Value"].sum() if not current.empty else 0
@@ -246,7 +251,7 @@ with tab_closed:
             "Stock",
             "Moneycontrol URL",
             "Buy Quantity",
-            "Sell Quantity",
+            "Current Price",
             "Avg Buy Price",
             "Avg Sell Price",
             "Total Investment (Historical)",
@@ -259,6 +264,7 @@ with tab_closed:
             .style.map(highlight_pl, subset=["Realized P&L", "% Gain/Loss (Sheet)"])
             .format(
                 {
+                    "Current Price": "₹{:.2f}",
                     "Avg Buy Price": "₹{:.2f}",
                     "Avg Sell Price": "₹{:.2f}",
                     "Total Investment (Historical)": "₹{:,.0f}",
