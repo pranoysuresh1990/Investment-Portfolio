@@ -86,17 +86,17 @@ with tab_overview:
         m5.metric("Total Dividend (all-time)", f"₹{total_dividend:,.0f}")
 
         st.markdown("#### Top Performing")
-        top_performing = current.nlargest(15, "Unrealized P&L %")
+        top_performing = current.nlargest(15, "Unrealized P&L")
         chart = (
             alt.Chart(top_performing)
             .mark_bar(color=GOOD, cornerRadiusTopLeft=4, cornerRadiusTopRight=4)
             .encode(
                 x=alt.X("Stock:N", sort="-y", title=None, axis=alt.Axis(labelAngle=-45)),
-                y=alt.Y("Unrealized P&L %:Q", title="Unrealized P&L %"),
+                y=alt.Y("Unrealized P&L:Q", title="Unrealized P&L (₹)"),
                 tooltip=[
                     "Stock",
-                    alt.Tooltip("Unrealized P&L %:Q", format=".1f", title="P&L %"),
                     alt.Tooltip("Unrealized P&L:Q", format=",.0f", title="P&L (₹)"),
+                    alt.Tooltip("Unrealized P&L %:Q", format=".1f", title="P&L %"),
                 ],
             )
             .properties(height=280)
@@ -104,7 +104,7 @@ with tab_overview:
         st.altair_chart(chart, use_container_width=True)
 
         st.markdown("#### Top Underperforming")
-        underperforming = current[current["Unrealized P&L"] < 0].nsmallest(15, "Unrealized P&L %")
+        underperforming = current[current["Unrealized P&L"] < 0].nsmallest(15, "Unrealized P&L")
         if underperforming.empty:
             st.caption("No underperforming holdings right now.")
         else:
@@ -113,11 +113,11 @@ with tab_overview:
                 .mark_bar(color=CRITICAL, cornerRadiusBottomLeft=4, cornerRadiusBottomRight=4)
                 .encode(
                     x=alt.X("Stock:N", sort="y", title=None, axis=alt.Axis(labelAngle=-45)),
-                    y=alt.Y("Unrealized P&L %:Q", title="Unrealized P&L %"),
+                    y=alt.Y("Unrealized P&L:Q", title="Unrealized P&L (₹)"),
                     tooltip=[
                         "Stock",
-                        alt.Tooltip("Unrealized P&L %:Q", format=".1f", title="P&L %"),
                         alt.Tooltip("Unrealized P&L:Q", format=",.0f", title="P&L (₹)"),
+                        alt.Tooltip("Unrealized P&L %:Q", format=".1f", title="P&L %"),
                     ],
                 )
                 .properties(height=280)
