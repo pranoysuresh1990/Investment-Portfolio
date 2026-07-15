@@ -9,14 +9,21 @@ st.set_page_config(page_title="My Portfolio Dashboard", layout="wide")
 st.title("📊 My Indian Stock Portfolio")
 
 try:
-    default_url = st.secrets.get("sheet_url", "")
+    configured_url = st.secrets.get("sheet_url", "")
 except Exception:
-    default_url = ""
-sheet_url = st.text_input("Google Sheet URL", value=default_url)
+    configured_url = ""
 
-if not sheet_url:
-    st.info("Paste your Google Sheet URL above to load your portfolio.")
-    st.stop()
+if configured_url:
+    sheet_url = configured_url
+else:
+    sheet_url = st.text_input("Google Sheet URL")
+    if not sheet_url:
+        st.info(
+            "Paste your Google Sheet URL above to load your portfolio, or set "
+            "`sheet_url` in the app's Secrets so you never have to paste it "
+            "again (see README.md)."
+        )
+        st.stop()
 
 try:
     raw_portfolio = load_worksheet(sheet_url, "My Portfolio")
