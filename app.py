@@ -82,6 +82,7 @@ with tab_current:
         display_cols = [
             "S.No",
             "Stock",
+            "Moneycontrol URL",
             "Quantity",
             "Avg Buy Price",
             "Current Price",
@@ -107,7 +108,14 @@ with tab_current:
                 }
             )
         )
-        st.dataframe(styled, use_container_width=True, hide_index=True)
+        st.dataframe(
+            styled,
+            use_container_width=True,
+            hide_index=True,
+            column_config={
+                "Moneycontrol URL": st.column_config.LinkColumn("Moneycontrol", display_text="🔗 View")
+            },
+        )
 
         fallback_stocks = current.loc[used_fallback, "Stock"].tolist()
         if fallback_stocks:
@@ -130,6 +138,7 @@ with tab_closed:
         display_cols = [
             "S.No",
             "Stock",
+            "Moneycontrol URL",
             "Buy Quantity",
             "Sell Quantity",
             "Avg Buy Price",
@@ -152,4 +161,11 @@ with tab_closed:
                 }
             )
         )
-        st.dataframe(styled, use_container_width=True, hide_index=True)
+        st.dataframe(
+            styled,
+            use_container_width=True,
+            hide_index=True,
+            column_config={
+                "Moneycontrol URL": st.column_config.LinkColumn("Moneycontrol", display_text="🔗 View")
+            },
+        )
