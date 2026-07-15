@@ -1,30 +1,41 @@
-"""Reads data live from a Google Sheet using a service account."""
+"""Reads data live from a public Google Sheet (no login required).
 
-import gspread
+Requires the sheet's sharing setting to be "Anyone with the link" -> Viewer.
+"""
+
+import io
+import re
+from urllib.parse import quote
+
 import pandas as pd
+import requests
 import streamlit as st
-from google.oauth2.service_account import Credentials
-
-SCOPES = [
-    "https://www.googleapis.com/auth/spreadsheets.readonly",
-    "https://www.googleapis.com/auth/drive.readonly",
-]
 
 
-@st.cache_resource
-def get_gspread_client() -> gspread.Client:
-    creds_dict = dict(st.secrets["gcp_service_account"])
-    creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
-    return gspread.authorize(creds)
+def extract_sheet_id(sheet_url: str) -> str:
+    match = re.search(r"/spreadsheets/d/([a-zA-Z0-9-_]+)", sheet_url)
+    if not match:
+        raise ValueError(
+            "That doesn't look like a Google Sheets URL. It should look like "
+            "https://docs.google.com/spreadsheets/d/XXXXXXXX/edit"
+        )
+    return match.group(1)
 
 
 @st.cache_data(ttl=60, show_spinner="Fetching latest data from Google Sheets...")
 def load_worksheet(sheet_url: str, worksheet_name: str) -> pd.DataFrame:
-    client = get_gspread_client()
-    workbook = client.open_by_url(sheet_url)
-    worksheet = workbook.worksheet(worksheet_name)
-    values = worksheet.get_all_values()
-    if not values:
-        return pd.DataFrame()
-    header, *rows = values
-    return pd.DataFrame(rows, columns=header)
+    sheet_id = extract_sheet_id(sheet_url)
+    csv_url = (
+        f"https://docs.google.com/spreadsheets/d/{sheet_id}/gviz/tq"
+        f"?tqx=out:csv&sheet={quote(worksheet_name)}"
+    )
+    response = requests.get(csv_url, timeout=15)
+
+    if response.status_code != 200 or "text/csv" not in response.headers.get("Content-Type", ""):
+        raise ValueError(
+            f"Couldn't read the '{worksheet_name}' tab. Make sure the sheet's "
+            "sharing setting is 'Anyone with the link' -> Viewer, and that a "
+            f"tab named exactly '{worksheet_name}' exists."
+        )
+
+    return pd.read_csv(io.StringIO(response.text))

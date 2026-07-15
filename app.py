@@ -8,14 +8,10 @@ from src.sheets_client import load_worksheet
 st.set_page_config(page_title="My Portfolio Dashboard", layout="wide")
 st.title("📊 My Indian Stock Portfolio")
 
-if "gcp_service_account" not in st.secrets:
-    st.error(
-        "No Google credentials found. Add your service account key to "
-        "`.streamlit/secrets.toml` (see README.md) before running the app."
-    )
-    st.stop()
-
-default_url = st.secrets.get("sheet_url", "")
+try:
+    default_url = st.secrets.get("sheet_url", "")
+except Exception:
+    default_url = ""
 sheet_url = st.text_input("Google Sheet URL", value=default_url)
 
 if not sheet_url:
