@@ -43,6 +43,10 @@ if not current.empty:
     yf_tickers = tuple(sorted(current["YF Ticker"].dropna().unique()))
     prices = fetch_live_prices(yf_tickers)
     current = current.merge(prices, on="YF Ticker", how="left")
+
+    used_fallback = current["Current Price"].isna() & current["Current Price (Sheet)"].notna()
+    current["Current Price"] = current["Current Price"].fillna(current["Current Price (Sheet)"])
+
     current["Current Value"] = current["Quantity"] * current["Current Price"]
     current["Unrealized P&L"] = current["Current Value"] - current["Invested Value"]
     current["Unrealized P&L %"] = (current["Unrealized P&L"] / current["Invested Value"]) * 100
@@ -105,10 +109,17 @@ with tab_current:
         )
         st.dataframe(styled, use_container_width=True, hide_index=True)
 
+        fallback_stocks = current.loc[used_fallback, "Stock"].tolist()
+        if fallback_stocks:
+            st.caption(
+                "ℹ️ Live price unavailable, used the sheet's price instead for: "
+                + ", ".join(fallback_stocks)
+            )
+
         missing_prices = current[current["Current Price"].isna()]
         if not missing_prices.empty:
             st.caption(
-                "⚠️ Couldn't fetch a live price for: "
+                "⚠️ No price available (live or sheet) for: "
                 + ", ".join(missing_prices["Stock"].tolist())
             )
 
