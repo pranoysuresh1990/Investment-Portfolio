@@ -91,12 +91,17 @@ with tab_overview:
             alt.Chart(top_performing)
             .mark_bar(color=GOOD, cornerRadiusTopLeft=4, cornerRadiusTopRight=4)
             .encode(
-                x=alt.X("Stock:N", sort="-y", title=None, axis=alt.Axis(labelAngle=-45)),
-                y=alt.Y("Unrealized P&L:Q", title="Unrealized P&L (₹)"),
+                x=alt.X(
+                    "Stock:N",
+                    sort=list(top_performing["Stock"]),
+                    title=None,
+                    axis=alt.Axis(labelAngle=-45),
+                ),
+                y=alt.Y("Unrealized P&L %:Q", title="Unrealized P&L %"),
                 tooltip=[
                     "Stock",
-                    alt.Tooltip("Unrealized P&L:Q", format=",.0f", title="P&L (₹)"),
                     alt.Tooltip("Unrealized P&L %:Q", format=".1f", title="P&L %"),
+                    alt.Tooltip("Unrealized P&L:Q", format=",.0f", title="P&L (₹)"),
                 ],
             )
             .properties(height=280)
@@ -112,12 +117,17 @@ with tab_overview:
                 alt.Chart(underperforming)
                 .mark_bar(color=CRITICAL, cornerRadiusBottomLeft=4, cornerRadiusBottomRight=4)
                 .encode(
-                    x=alt.X("Stock:N", sort="y", title=None, axis=alt.Axis(labelAngle=-45)),
-                    y=alt.Y("Unrealized P&L:Q", title="Unrealized P&L (₹)"),
+                    x=alt.X(
+                        "Stock:N",
+                        sort=list(underperforming["Stock"]),
+                        title=None,
+                        axis=alt.Axis(labelAngle=-45),
+                    ),
+                    y=alt.Y("Unrealized P&L %:Q", title="Unrealized P&L %"),
                     tooltip=[
                         "Stock",
-                        alt.Tooltip("Unrealized P&L:Q", format=",.0f", title="P&L (₹)"),
                         alt.Tooltip("Unrealized P&L %:Q", format=".1f", title="P&L %"),
+                        alt.Tooltip("Unrealized P&L:Q", format=",.0f", title="P&L (₹)"),
                     ],
                 )
                 .properties(height=280)
