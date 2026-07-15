@@ -3,6 +3,7 @@
 import pandas as pd
 
 SHEET_COLUMNS = {
+    "serial_no": "S.No",
     "name": "Shares (Unique)",
     "ticker": "Ticker",
     "quantity": "Holding Quantity",
@@ -42,6 +43,7 @@ def parse_holdings(raw_df: pd.DataFrame) -> pd.DataFrame:
 
     df = pd.DataFrame(
         {
+            "S.No": _to_numeric(raw_df[SHEET_COLUMNS["serial_no"]]).astype("Int64"),
             "Stock": raw_df[SHEET_COLUMNS["name"]],
             "Ticker": raw_df[SHEET_COLUMNS["ticker"]],
             "Quantity": _to_numeric(raw_df[SHEET_COLUMNS["quantity"]]),

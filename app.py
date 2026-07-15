@@ -48,6 +48,7 @@ col2.metric("Current Value", f"₹{total_current:,.0f}")
 col3.metric("Overall P&L", f"₹{total_pl:,.0f}", f"{total_pl_pct:.1f}%")
 
 display_cols = [
+    "S.No",
     "Stock",
     "Ticker",
     "Quantity",
