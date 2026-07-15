@@ -85,8 +85,12 @@ with tab_overview:
         m4.metric("Current Value of Holdings", f"₹{total_current_value:,.0f}")
         m5.metric("Total Dividend (all-time)", f"₹{total_dividend:,.0f}")
 
+        valid_pl = current[current["Unrealized P&L"].notna()]
+
         st.markdown("#### Top Performing")
-        top_performing = current.nlargest(15, "Unrealized P&L")
+        top_performing = valid_pl[valid_pl["Unrealized P&L"] >= 0].sort_values(
+            "Unrealized P&L", ascending=False
+        )
         chart = (
             alt.Chart(top_performing)
             .mark_bar(color=GOOD, cornerRadiusTopLeft=4, cornerRadiusTopRight=4)
@@ -109,7 +113,9 @@ with tab_overview:
         st.altair_chart(chart, use_container_width=True)
 
         st.markdown("#### Top Underperforming")
-        underperforming = current[current["Unrealized P&L"] < 0].nsmallest(15, "Unrealized P&L")
+        underperforming = valid_pl[valid_pl["Unrealized P&L"] < 0].sort_values(
+            "Unrealized P&L", ascending=True
+        )
         if underperforming.empty:
             st.caption("No underperforming holdings right now.")
         else:
