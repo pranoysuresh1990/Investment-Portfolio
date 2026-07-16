@@ -157,7 +157,7 @@ with tab_overview:
             size=alt.Size(
                 "Invested Value:Q",
                 title="Invested Value (₹)",
-                scale=alt.Scale(range=[50, 2000], zero=False),
+                scale=alt.Scale(range=[30, 4000], zero=False),
                 legend=None,
             ),
             color=alt.Color(
