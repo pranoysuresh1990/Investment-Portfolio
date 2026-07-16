@@ -83,12 +83,13 @@ with tab_overview:
     if current.empty:
         st.info("No current holdings to show.")
     else:
-        m1, m2, m3, m4, m5 = st.columns(5)
+        m1, m2, m3, m4, m5, m6 = st.columns(6)
         m1.metric("Active Holdings", len(current))
-        m2.metric("Unrealized P&L", f"₹{total_unrealized_pl:,.0f}", f"{total_unrealized_pct:.1f}%")
-        m3.metric("Realized P&L (all-time)", f"₹{total_realized_pl:,.0f}")
-        m4.metric("Current Value of Holdings", f"₹{total_current_value:,.0f}")
-        m5.metric("Total Dividend (all-time)", f"₹{total_dividend:,.0f}")
+        m2.metric("Total Invested (current holdings)", f"₹{total_invested:,.0f}")
+        m3.metric("Current Value of Holdings", f"₹{total_current_value:,.0f}")
+        m4.metric("Unrealized P&L", f"₹{total_unrealized_pl:,.0f}", f"{total_unrealized_pct:.1f}%")
+        m5.metric("Realized P&L (all-time)", f"₹{total_realized_pl:,.0f}")
+        m6.metric("Total Dividend (all-time)", f"₹{total_dividend:,.0f}")
 
         valid_pl = current[current["Unrealized P&L"].notna()]
 
@@ -157,7 +158,7 @@ with tab_overview:
                 "Invested Value:Q",
                 title="Invested Value (₹)",
                 scale=alt.Scale(range=[50, 2000], zero=False),
-                legend=alt.Legend(format=",.0f"),
+                legend=None,
             ),
             color=alt.Color(
                 "Status:N",
