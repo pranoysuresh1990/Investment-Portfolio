@@ -112,6 +112,7 @@ with tab_overview:
                     "Stock",
                     alt.Tooltip("Unrealized P&L %:Q", format=".1f", title="P&L %"),
                     alt.Tooltip("Unrealized P&L:Q", format=",.0f", title="P&L (₹)"),
+                    alt.Tooltip("Invested Value:Q", format=",.0f", title="Invested (₹)"),
                 ],
             )
             .properties(height=280)
@@ -140,6 +141,7 @@ with tab_overview:
                         "Stock",
                         alt.Tooltip("Unrealized P&L %:Q", format=".1f", title="P&L %"),
                         alt.Tooltip("Unrealized P&L:Q", format=",.0f", title="P&L (₹)"),
+                        alt.Tooltip("Invested Value:Q", format=",.0f", title="Invested (₹)"),
                     ],
                 )
                 .properties(height=280)
