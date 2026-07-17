@@ -19,8 +19,6 @@ SHEET_COLUMNS = {
     "unrealized_pl_sheet": "Unrealized Profit/Loss",
     "pct_gain_loss": "% Gain/Loss (Including Dividends)",
     "total_dividend": "Total Dividend",
-    "roce": "ROCE (TTM)",
-    "piotroski": "Piotroski F Score",
 }
 
 
@@ -76,8 +74,6 @@ def parse_portfolio(raw_df: pd.DataFrame) -> pd.DataFrame:
             "Unrealized P&L (Sheet)": _to_numeric(raw_df[SHEET_COLUMNS["unrealized_pl_sheet"]]),
             "% Gain/Loss (Sheet)": _to_numeric(raw_df[SHEET_COLUMNS["pct_gain_loss"]]),
             "Total Dividend": _to_numeric(raw_df[SHEET_COLUMNS["total_dividend"]]),
-            "ROCE (TTM)": _to_numeric(raw_df[SHEET_COLUMNS["roce"]]),
-            "Piotroski F Score": raw_df[SHEET_COLUMNS["piotroski"]],
         }
     )
 
@@ -118,14 +114,3 @@ def holding_periods(transactions: pd.DataFrame) -> pd.DataFrame:
     first_buy = transactions[transactions["Type"] == "Buy"].groupby("YF Ticker")["Date"].min()
     last_sell = transactions[transactions["Type"] == "Sell"].groupby("YF Ticker")["Date"].max()
     return pd.DataFrame({"First Buy Date": first_buy, "Last Sell Date": last_sell}).reset_index()
-
-
-def annualized_return(start_value: float, end_value: float, days: float) -> float | None:
-    """CAGR: normalizes a raw % gain by how long it took, so a 50% gain in 5
-    days and a 50% gain in 5 years don't read the same."""
-    if pd.isna(start_value) or pd.isna(end_value) or pd.isna(days):
-        return None
-    if start_value <= 0 or days <= 0:
-        return None
-    years = days / 365.25
-    return ((end_value / start_value) ** (1 / years) - 1) * 100
