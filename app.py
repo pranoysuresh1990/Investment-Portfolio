@@ -6,7 +6,6 @@ from src.data_loader import (
     annualized_return,
     closed_positions,
     current_holdings,
-    format_holding_period,
     holding_periods,
     parse_portfolio,
     parse_transactions,
@@ -70,7 +69,7 @@ if not current.empty:
 
     current = current.merge(periods, on="YF Ticker", how="left")
     current["Holding Days"] = (today - current["First Buy Date"]).dt.days
-    current["Holding Period"] = current["Holding Days"].apply(format_holding_period)
+    current["Holding Years"] = current["Holding Days"] / 365.25
     current["Annualized Return %"] = current.apply(
         lambda r: annualized_return(r["Invested Value"], r["Current Value"], r["Holding Days"]),
         axis=1,
@@ -82,7 +81,7 @@ if not closed.empty:
 
     closed = closed.merge(periods, on="YF Ticker", how="left")
     closed["Holding Days"] = (closed["Last Sell Date"] - closed["First Buy Date"]).dt.days
-    closed["Holding Period"] = closed["Holding Days"].apply(format_holding_period)
+    closed["Holding Years"] = closed["Holding Days"] / 365.25
     closed["Ending Value"] = closed["Total Investment (Historical)"] + closed["Realized P&L"]
     closed["Annualized Return %"] = closed.apply(
         lambda r: annualized_return(
@@ -235,7 +234,7 @@ with tab_current:
             "Current Value",
             "Unrealized P&L",
             "Unrealized P&L %",
-            "Holding Days",
+            "Holding Years",
             "Annualized Return %",
             "Realized P&L",
         ]
@@ -254,7 +253,7 @@ with tab_current:
                     "Current Value": "₹{:,.0f}",
                     "Unrealized P&L": "₹{:,.0f}",
                     "Unrealized P&L %": "{:.1f}%",
-                    "Holding Days": "{:.0f}",
+                    "Holding Years": "{:.1f}",
                     "Annualized Return %": "{:.1f}%",
                     "Realized P&L": "₹{:,.0f}",
                 }
@@ -296,7 +295,7 @@ with tab_closed:
             "Avg Buy Price",
             "Avg Sell Price",
             "Total Investment (Historical)",
-            "Holding Days",
+            "Holding Years",
             "Annualized Return %",
             "Realized P&L",
             "% Gain/Loss (Sheet)",
@@ -314,7 +313,7 @@ with tab_closed:
                     "Avg Buy Price": "₹{:.2f}",
                     "Avg Sell Price": "₹{:.2f}",
                     "Total Investment (Historical)": "₹{:,.0f}",
-                    "Holding Days": "{:.0f}",
+                    "Holding Years": "{:.1f}",
                     "Annualized Return %": "{:.1f}%",
                     "Realized P&L": "₹{:,.0f}",
                     "% Gain/Loss (Sheet)": "{:.1f}%",

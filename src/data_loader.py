@@ -120,18 +120,6 @@ def holding_periods(transactions: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame({"First Buy Date": first_buy, "Last Sell Date": last_sell}).reset_index()
 
 
-def format_holding_period(days: float) -> str | None:
-    """Turns a day count into a human-readable duration, e.g. '5 days', '3.2 years'."""
-    if pd.isna(days) or days < 0:
-        return None
-    days = int(days)
-    if days < 30:
-        return f"{days} day{'s' if days != 1 else ''}"
-    if days < 365:
-        return f"{days / 30.44:.1f} months"
-    return f"{days / 365.25:.1f} years"
-
-
 def annualized_return(start_value: float, end_value: float, days: float) -> float | None:
     """CAGR: normalizes a raw % gain by how long it took, so a 50% gain in 5
     days and a 50% gain in 5 years don't read the same."""
