@@ -235,7 +235,7 @@ with tab_current:
             "Current Value",
             "Unrealized P&L",
             "Unrealized P&L %",
-            "Holding Period",
+            "Holding Days",
             "Annualized Return %",
             "Realized P&L",
         ]
@@ -254,6 +254,7 @@ with tab_current:
                     "Current Value": "₹{:,.0f}",
                     "Unrealized P&L": "₹{:,.0f}",
                     "Unrealized P&L %": "{:.1f}%",
+                    "Holding Days": "{:.0f}",
                     "Annualized Return %": "{:.1f}%",
                     "Realized P&L": "₹{:,.0f}",
                 }
@@ -295,7 +296,7 @@ with tab_closed:
             "Avg Buy Price",
             "Avg Sell Price",
             "Total Investment (Historical)",
-            "Holding Period",
+            "Holding Days",
             "Annualized Return %",
             "Realized P&L",
             "% Gain/Loss (Sheet)",
@@ -313,6 +314,7 @@ with tab_closed:
                     "Avg Buy Price": "₹{:.2f}",
                     "Avg Sell Price": "₹{:.2f}",
                     "Total Investment (Historical)": "₹{:,.0f}",
+                    "Holding Days": "{:.0f}",
                     "Annualized Return %": "{:.1f}%",
                     "Realized P&L": "₹{:,.0f}",
                     "% Gain/Loss (Sheet)": "{:.1f}%",
