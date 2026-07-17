@@ -24,7 +24,10 @@ def extract_sheet_id(sheet_url: str) -> str:
 
 
 @st.cache_data(ttl=60, show_spinner="Fetching latest data from Google Sheets...")
-def load_worksheet(sheet_url: str, worksheet_name: str) -> pd.DataFrame:
+def load_worksheet(sheet_url: str, worksheet_name: str, data_start_row: int = 1) -> pd.DataFrame:
+    """data_start_row is the 0-indexed row where data begins; row 0 is always
+    treated as the column header. Sheets with a multi-row header (e.g. a
+    merged sub-header row, or a blank spacer row) should pass a higher value."""
     sheet_id = extract_sheet_id(sheet_url)
 
     try:
@@ -54,7 +57,8 @@ def load_worksheet(sheet_url: str, worksheet_name: str) -> pd.DataFrame:
     if not values:
         return pd.DataFrame()
 
-    header, *rows = values
+    header = values[0]
+    rows = values[data_start_row:]
     width = len(header)
     padded_rows = [row + [""] * (width - len(row)) for row in rows]
     return pd.DataFrame(padded_rows, columns=header)

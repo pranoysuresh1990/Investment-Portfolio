@@ -95,3 +95,49 @@ def closed_positions(df: pd.DataFrame) -> pd.DataFrame:
     return df[
         (df["Quantity"].fillna(0) == 0) & (df["Buy Quantity"].fillna(0) > 0)
     ].reset_index(drop=True)
+
+
+def parse_transactions(raw_df: pd.DataFrame) -> pd.DataFrame:
+    """Parses the 'Transactions' sheet down to Ticker/Type/Date, used to work
+    out how long each stock has been (or was) held."""
+    df = pd.DataFrame(
+        {
+            "Ticker": raw_df["Ticker"],
+            "Type": raw_df["Transaction Type"],
+            "Date": pd.to_datetime(raw_df["Date (Text)"], format="%d-%m-%y", errors="coerce"),
+        }
+    )
+    df["YF Ticker"] = df["Ticker"].map(to_yfinance_ticker)
+    return df.dropna(subset=["YF Ticker", "Date"])
+
+
+def holding_periods(transactions: pd.DataFrame) -> pd.DataFrame:
+    """First buy date and last sell date per stock. First buy date is used as
+    the start of the holding period even if a stock was bought in multiple
+    lots over time."""
+    first_buy = transactions[transactions["Type"] == "Buy"].groupby("YF Ticker")["Date"].min()
+    last_sell = transactions[transactions["Type"] == "Sell"].groupby("YF Ticker")["Date"].max()
+    return pd.DataFrame({"First Buy Date": first_buy, "Last Sell Date": last_sell}).reset_index()
+
+
+def format_holding_period(days: float) -> str | None:
+    """Turns a day count into a human-readable duration, e.g. '5 days', '3.2 years'."""
+    if pd.isna(days) or days < 0:
+        return None
+    days = int(days)
+    if days < 30:
+        return f"{days} day{'s' if days != 1 else ''}"
+    if days < 365:
+        return f"{days / 30.44:.1f} months"
+    return f"{days / 365.25:.1f} years"
+
+
+def annualized_return(start_value: float, end_value: float, days: float) -> float | None:
+    """CAGR: normalizes a raw % gain by how long it took, so a 50% gain in 5
+    days and a 50% gain in 5 years don't read the same."""
+    if pd.isna(start_value) or pd.isna(end_value) or pd.isna(days):
+        return None
+    if start_value <= 0 or days <= 0:
+        return None
+    years = days / 365.25
+    return ((end_value / start_value) ** (1 / years) - 1) * 100

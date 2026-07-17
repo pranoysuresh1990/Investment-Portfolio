@@ -2,7 +2,15 @@ import altair as alt
 import pandas as pd
 import streamlit as st
 
-from src.data_loader import closed_positions, current_holdings, parse_portfolio
+from src.data_loader import (
+    annualized_return,
+    closed_positions,
+    current_holdings,
+    format_holding_period,
+    holding_periods,
+    parse_portfolio,
+    parse_transactions,
+)
 from src.prices import fetch_live_prices
 from src.sheets_client import load_worksheet
 
@@ -32,6 +40,8 @@ else:
 try:
     raw_portfolio = load_worksheet(sheet_url, "My Portfolio")
     portfolio = parse_portfolio(raw_portfolio)
+    raw_transactions = load_worksheet(sheet_url, "Transactions", data_start_row=3)
+    periods = holding_periods(parse_transactions(raw_transactions))
 except Exception as e:
     st.error(f"Couldn't load your portfolio: {e}")
     st.stop()
@@ -46,6 +56,8 @@ if current.empty and closed.empty:
 all_yf_tickers = tuple(sorted(portfolio["YF Ticker"].dropna().unique()))
 prices = fetch_live_prices(all_yf_tickers)
 
+today = pd.Timestamp.today().normalize()
+
 if not current.empty:
     current = current.merge(prices, on="YF Ticker", how="left")
 
@@ -56,9 +68,28 @@ if not current.empty:
     current["Unrealized P&L"] = current["Current Value"] - current["Invested Value"]
     current["Unrealized P&L %"] = (current["Unrealized P&L"] / current["Invested Value"]) * 100
 
+    current = current.merge(periods, on="YF Ticker", how="left")
+    current["Holding Days"] = (today - current["First Buy Date"]).dt.days
+    current["Holding Period"] = current["Holding Days"].apply(format_holding_period)
+    current["Annualized Return %"] = current.apply(
+        lambda r: annualized_return(r["Invested Value"], r["Current Value"], r["Holding Days"]),
+        axis=1,
+    )
+
 if not closed.empty:
     closed = closed.merge(prices, on="YF Ticker", how="left")
     closed["Current Price"] = closed["Current Price"].fillna(closed["Current Price (Sheet)"])
+
+    closed = closed.merge(periods, on="YF Ticker", how="left")
+    closed["Holding Days"] = (closed["Last Sell Date"] - closed["First Buy Date"]).dt.days
+    closed["Holding Period"] = closed["Holding Days"].apply(format_holding_period)
+    closed["Ending Value"] = closed["Total Investment (Historical)"] + closed["Realized P&L"]
+    closed["Annualized Return %"] = closed.apply(
+        lambda r: annualized_return(
+            r["Total Investment (Historical)"], r["Ending Value"], r["Holding Days"]
+        ),
+        axis=1,
+    )
 
 total_invested = current["Invested Value"].sum() if not current.empty else 0
 total_current_value = current["Current Value"].sum() if not current.empty else 0
@@ -204,12 +235,17 @@ with tab_current:
             "Current Value",
             "Unrealized P&L",
             "Unrealized P&L %",
+            "Holding Period",
+            "Annualized Return %",
             "Realized P&L",
         ]
         styled = (
             current[display_cols]
             .sort_values("Unrealized P&L %", ascending=False)
-            .style.map(highlight_pl, subset=["Unrealized P&L", "Unrealized P&L %", "Realized P&L"])
+            .style.map(
+                highlight_pl,
+                subset=["Unrealized P&L", "Unrealized P&L %", "Annualized Return %", "Realized P&L"],
+            )
             .format(
                 {
                     "Avg Buy Price": "₹{:.2f}",
@@ -218,6 +254,7 @@ with tab_current:
                     "Current Value": "₹{:,.0f}",
                     "Unrealized P&L": "₹{:,.0f}",
                     "Unrealized P&L %": "{:.1f}%",
+                    "Annualized Return %": "{:.1f}%",
                     "Realized P&L": "₹{:,.0f}",
                 }
             )
@@ -258,19 +295,25 @@ with tab_closed:
             "Avg Buy Price",
             "Avg Sell Price",
             "Total Investment (Historical)",
+            "Holding Period",
+            "Annualized Return %",
             "Realized P&L",
             "% Gain/Loss (Sheet)",
         ]
         styled = (
             closed[display_cols]
             .sort_values("% Gain/Loss (Sheet)", ascending=False)
-            .style.map(highlight_pl, subset=["Realized P&L", "% Gain/Loss (Sheet)"])
+            .style.map(
+                highlight_pl,
+                subset=["Annualized Return %", "Realized P&L", "% Gain/Loss (Sheet)"],
+            )
             .format(
                 {
                     "Current Price": "₹{:.2f}",
                     "Avg Buy Price": "₹{:.2f}",
                     "Avg Sell Price": "₹{:.2f}",
                     "Total Investment (Historical)": "₹{:,.0f}",
+                    "Annualized Return %": "{:.1f}%",
                     "Realized P&L": "₹{:,.0f}",
                     "% Gain/Loss (Sheet)": "{:.1f}%",
                 }
