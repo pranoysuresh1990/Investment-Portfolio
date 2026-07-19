@@ -224,6 +224,7 @@ with tab_current:
             "Unrealized P&L %",
             "Holding Years",
             "Realized P&L",
+            "Total Dividend",
         ]
         styled = (
             current[display_cols]
@@ -242,6 +243,7 @@ with tab_current:
                     "Unrealized P&L %": "{:.1f}%",
                     "Holding Years": "{:.1f}",
                     "Realized P&L": "₹{:,.0f}",
+                    "Total Dividend": "₹{:,.0f}",
                 }
             )
         )
