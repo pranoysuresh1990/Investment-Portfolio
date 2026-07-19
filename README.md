@@ -1,7 +1,8 @@
 # My Indian Stock Portfolio Dashboard
 
 A Streamlit dashboard that reads your portfolio live from a public Google
-Sheet and shows current holdings with live NSE/BSE prices from `yfinance`.
+Sheet and shows current holdings using the price in column I ("Current
+Share Price (google Finance)") of the "My Portfolio" tab.
 
 ## 1. Share your Google Sheet
 
@@ -46,8 +47,8 @@ silently hide filtered-out rows).
    want it fully public.
 
 It reads the `My Portfolio` tab, keeps only stocks you currently hold
-(Holding Quantity > 0), fetches live prices for each via `yfinance`, and
-shows a table with P&L highlighted green (gain) or red (loss).
+(Holding Quantity > 0), uses each stock's price from column I of that
+sheet, and shows a table with P&L highlighted green (gain) or red (loss).
 
 ## Running locally instead (optional)
 
@@ -63,14 +64,13 @@ streamlit run app.py
 ```
 app.py                  Streamlit entry point / page layout
 src/sheets_client.py    Live Google Sheets connection (Sheets API, filter-proof)
-src/data_loader.py      Parses the "My Portfolio" tab into clean tables
-src/prices.py           Live price fetch via yfinance
+src/data_loader.py      Parses the "My Portfolio" and "Transactions" tabs into clean tables
 ```
 
 ## Status
 
 - [x] Live Google Sheets connection ("My Portfolio" tab, ignores sheet filters)
-- [x] Current holdings table with live prices and P&L highlighting
+- [x] Current holdings table with prices from the sheet and P&L highlighting
 - [x] Realized/unrealized P&L, closed positions in a separate tab
 - [ ] Transactions tab (buy/sell/dividend history)
 - [ ] Technical analysis (moving averages, RSI)

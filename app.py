@@ -9,7 +9,6 @@ from src.data_loader import (
     parse_portfolio,
     parse_transactions,
 )
-from src.prices import fetch_live_prices
 from src.sheets_client import load_worksheet
 
 GOOD = "#0ca30c"
@@ -51,17 +50,10 @@ if current.empty and closed.empty:
     st.warning("No stocks found in the 'My Portfolio' sheet.")
     st.stop()
 
-all_yf_tickers = tuple(sorted(portfolio["YF Ticker"].dropna().unique()))
-prices = fetch_live_prices(all_yf_tickers)
-
 today = pd.Timestamp.today().normalize()
 
 if not current.empty:
-    current = current.merge(prices, on="YF Ticker", how="left")
-
-    used_fallback = current["Current Price"].isna() & current["Current Price (Sheet)"].notna()
-    current["Current Price"] = current["Current Price"].fillna(current["Current Price (Sheet)"])
-
+    current["Current Price"] = current["Current Price (Sheet)"]
     current["Current Value"] = current["Quantity"] * current["Current Price"]
     current["Unrealized P&L"] = current["Current Value"] - current["Invested Value"]
     current["Unrealized P&L %"] = (current["Unrealized P&L"] / current["Invested Value"]) * 100
@@ -71,8 +63,7 @@ if not current.empty:
     current["Holding Years"] = current["Holding Days"] / 365.25
 
 if not closed.empty:
-    closed = closed.merge(prices, on="YF Ticker", how="left")
-    closed["Current Price"] = closed["Current Price"].fillna(closed["Current Price (Sheet)"])
+    closed["Current Price"] = closed["Current Price (Sheet)"]
 
     closed = closed.merge(periods, on="YF Ticker", how="left")
     closed["Holding Days"] = (closed["Last Sell Date"] - closed["First Buy Date"]).dt.days
@@ -256,17 +247,10 @@ with tab_current:
             },
         )
 
-        fallback_stocks = current.loc[used_fallback, "Stock"].tolist()
-        if fallback_stocks:
-            st.caption(
-                "ℹ️ Live price unavailable, used the sheet's price instead for: "
-                + ", ".join(fallback_stocks)
-            )
-
         missing_prices = current[current["Current Price"].isna()]
         if not missing_prices.empty:
             st.caption(
-                "⚠️ No price available (live or sheet) for: "
+                "⚠️ No price in column I of 'My Portfolio' for: "
                 + ", ".join(missing_prices["Stock"].tolist())
             )
 
