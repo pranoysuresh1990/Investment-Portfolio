@@ -33,7 +33,8 @@ def _to_numeric(series: pd.Series) -> pd.Series:
 
 
 def to_yfinance_ticker(raw_ticker: str) -> str | None:
-    """'NSE:HDFCBANK' -> 'HDFCBANK.NS', 'BOM:500124' -> '500124.BO'."""
+    """'NSE:HDFCBANK' -> 'HDFCBANK.NS', 'BOM:500124' -> '500124.BO',
+    'NYSE:UBER'/'NASDAQ:NVDA' -> 'UBER'/'NVDA' (US tickers need no suffix)."""
     if not raw_ticker or ":" not in raw_ticker:
         return None
     exchange, code = raw_ticker.split(":", 1)
@@ -43,15 +44,24 @@ def to_yfinance_ticker(raw_ticker: str) -> str | None:
         return f"{code}.NS"
     if exchange == "BOM":
         return f"{code}.BO"
+    if exchange in ("NYSE", "NASDAQ"):
+        return code
     return None
 
 
+def _clean_url(series: pd.Series) -> pd.Series:
+    """Blanks out empty cells and sheet formula errors (#VALUE!, #REF!, etc.)."""
+    return series.where(~series.isin(["", "None"]) & ~series.str.startswith("#"), None)
+
+
 def parse_portfolio(raw_df: pd.DataFrame) -> pd.DataFrame:
-    """Parses every row of the 'My Portfolio' sheet (current and closed positions alike)."""
+    """Parses every row of a stock portfolio sheet ('Indian Stock Portfolio' or
+    'US Stock Portfolio' -- both share the same layout), current and closed
+    positions alike."""
     missing = [col for col in SHEET_COLUMNS.values() if col not in raw_df.columns]
     if missing:
         raise ValueError(
-            "The 'My Portfolio' sheet is missing expected columns: " + ", ".join(missing)
+            "The portfolio sheet is missing expected columns: " + ", ".join(missing)
         )
 
     df = pd.DataFrame(
@@ -59,7 +69,7 @@ def parse_portfolio(raw_df: pd.DataFrame) -> pd.DataFrame:
             "S.No": _to_numeric(raw_df[SHEET_COLUMNS["serial_no"]]).astype("Int64"),
             "Stock": raw_df[SHEET_COLUMNS["name"]],
             "Ticker": raw_df[SHEET_COLUMNS["ticker"]],
-            "Moneycontrol URL": raw_df[SHEET_COLUMNS["url_moneycontrol"]].replace("", None),
+            "Moneycontrol URL": _clean_url(raw_df[SHEET_COLUMNS["url_moneycontrol"]]),
             "Buy Quantity": _to_numeric(raw_df[SHEET_COLUMNS["buy_quantity"]]),
             "Sell Quantity": _to_numeric(raw_df[SHEET_COLUMNS["sell_quantity"]]),
             "Quantity": _to_numeric(raw_df[SHEET_COLUMNS["quantity"]]),
@@ -93,24 +103,80 @@ def closed_positions(df: pd.DataFrame) -> pd.DataFrame:
     ].reset_index(drop=True)
 
 
-def parse_transactions(raw_df: pd.DataFrame) -> pd.DataFrame:
-    """Parses the 'Transactions' sheet down to Ticker/Type/Date, used to work
-    out how long each stock has been (or was) held."""
+def parse_transactions(raw_df: pd.DataFrame, date_format: str | None = "%d-%m-%y") -> pd.DataFrame:
+    """Parses a transactions sheet down to Ticker/Type/Date, used to work out
+    how long each stock has been (or was) held. date_format=None auto-infers
+    the date format instead of requiring an exact match (for sheets where the
+    date column is a real Date cell rather than free-typed text)."""
+    dates = raw_df["Date (Text)"]
+    parsed_dates = (
+        pd.to_datetime(dates, format=date_format, errors="coerce")
+        if date_format
+        else pd.to_datetime(dates, dayfirst=True, errors="coerce")
+    )
     df = pd.DataFrame(
         {
             "Ticker": raw_df["Ticker"],
             "Type": raw_df["Transaction Type"],
-            "Date": pd.to_datetime(raw_df["Date (Text)"], format="%d-%m-%y", errors="coerce"),
+            "Date": parsed_dates,
         }
     )
     df["YF Ticker"] = df["Ticker"].map(to_yfinance_ticker)
     return df.dropna(subset=["YF Ticker", "Date"])
 
 
-def holding_periods(transactions: pd.DataFrame) -> pd.DataFrame:
+def holding_periods(
+    transactions: pd.DataFrame, buy_type: str = "Buy", sell_type: str = "Sell"
+) -> pd.DataFrame:
     """First buy date and last sell date per stock. First buy date is used as
     the start of the holding period even if a stock was bought in multiple
     lots over time."""
-    first_buy = transactions[transactions["Type"] == "Buy"].groupby("YF Ticker")["Date"].min()
-    last_sell = transactions[transactions["Type"] == "Sell"].groupby("YF Ticker")["Date"].max()
+    first_buy = transactions[transactions["Type"] == buy_type].groupby("YF Ticker")["Date"].min()
+    last_sell = transactions[transactions["Type"] == sell_type].groupby("YF Ticker")["Date"].max()
     return pd.DataFrame({"First Buy Date": first_buy, "Last Sell Date": last_sell}).reset_index()
+
+
+MF_SHEET_COLUMNS = {
+    "serial_no": "S.no",
+    "name": "MF",
+    "units": "No. of Units",
+    "nav": "NAV",
+    "current_value": "Total Value of Holding",
+    "invested_value": "Invested Amount",
+    "gain_loss": "Gain/Loss",
+    "gain_loss_pct": "Gain/Loss %",
+}
+
+
+def parse_mutual_funds(raw_df: pd.DataFrame) -> pd.DataFrame:
+    """Parses the 'MFs' sheet. Unlike equity, invested/current value and P&L
+    are already computed in the sheet, so this just reads them through."""
+    missing = [col for col in MF_SHEET_COLUMNS.values() if col not in raw_df.columns]
+    if missing:
+        raise ValueError("The 'MFs' sheet is missing expected columns: " + ", ".join(missing))
+
+    df = pd.DataFrame(
+        {
+            "S.No": _to_numeric(raw_df[MF_SHEET_COLUMNS["serial_no"]]).astype("Int64"),
+            "Fund": raw_df[MF_SHEET_COLUMNS["name"]],
+            "Units": _to_numeric(raw_df[MF_SHEET_COLUMNS["units"]]),
+            "Current NAV": _to_numeric(raw_df[MF_SHEET_COLUMNS["nav"]]),
+            "Current Value": _to_numeric(raw_df[MF_SHEET_COLUMNS["current_value"]]),
+            "Invested Value": _to_numeric(raw_df[MF_SHEET_COLUMNS["invested_value"]]),
+            "Unrealized P&L": _to_numeric(raw_df[MF_SHEET_COLUMNS["gain_loss"]]),
+            "Unrealized P&L %": _to_numeric(raw_df[MF_SHEET_COLUMNS["gain_loss_pct"]]) * 100,
+        }
+    )
+    return df[df["Units"].fillna(0) > 0].reset_index(drop=True)
+
+
+def latest_conversion_rate(raw_wallet_df: pd.DataFrame) -> float | None:
+    """Most recent USD->INR 'Conversion ratio' logged in a wallet transaction
+    sheet (e.g. 'US Stock Wallet Transaction'), used to show a blended INR
+    figure alongside native-currency values."""
+    dates = pd.to_datetime(raw_wallet_df["Date (Text)"], dayfirst=True, errors="coerce")
+    rates = _to_numeric(raw_wallet_df["Conversion ratio"])
+    valid = pd.DataFrame({"Date": dates, "Rate": rates}).dropna()
+    if valid.empty:
+        return None
+    return float(valid.sort_values("Date").iloc[-1]["Rate"])

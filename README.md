@@ -1,8 +1,9 @@
-# My Indian Stock Portfolio Dashboard
+# My Investment Portfolio Dashboard
 
-A Streamlit dashboard that reads your portfolio live from a public Google
-Sheet and shows current holdings using the price in column I ("Current
-Share Price (google Finance)") of the "My Portfolio" tab.
+A Streamlit dashboard that reads your investments live from a public Google
+Sheet — Indian stocks, mutual funds, and US stocks — using prices already
+present in the sheet (via `GOOGLEFINANCE()` formulas or manual entry), with
+no live price-fetching from the app itself.
 
 ## 1. Share your Google Sheet
 
@@ -46,9 +47,15 @@ silently hide filtered-out rows).
    who's allowed to view it (e.g. only your Google account) if you don't
    want it fully public.
 
-It reads the `My Portfolio` tab, keeps only stocks you currently hold
-(Holding Quantity > 0), uses each stock's price from column I of that
-sheet, and shows a table with P&L highlighted green (gain) or red (loss).
+## Sheet tabs expected
+
+| Tab name | Purpose |
+|---|---|
+| `Indian Stock Portfolio` | NSE/BSE holdings, one row per stock |
+| `Indian Stock Transactions` | Buy/Sell/Dividend history for Indian stocks |
+| `MFs` | Mutual fund holdings, one row per fund |
+| `US Stock Portfolio` | US stock holdings, one row per stock (same layout as Indian) |
+| `US Stock Wallet Transaction` | Deposit/Invested/Withdrawn/Dividend history for US stocks, including a `Conversion ratio` column used for USD->INR |
 
 ## Running locally instead (optional)
 
@@ -64,14 +71,25 @@ streamlit run app.py
 ```
 app.py                  Streamlit entry point / page layout
 src/sheets_client.py    Live Google Sheets connection (Sheets API, filter-proof)
-src/data_loader.py      Parses the "My Portfolio" and "Transactions" tabs into clean tables
+src/data_loader.py      Parses all five sheet tabs into clean tables
 ```
 
 ## Status
 
-- [x] Live Google Sheets connection ("My Portfolio" tab, ignores sheet filters)
-- [x] Current holdings table with prices from the sheet and P&L highlighting
-- [x] Realized/unrealized P&L, closed positions in a separate tab
-- [ ] Transactions tab (buy/sell/dividend history)
+- [x] Live Google Sheets connection, ignores sheet filters
+- [x] Indian stocks: current holdings + closed positions, P&L, holding period
+- [x] Mutual funds: holdings table
+- [x] US stocks: current holdings + closed positions, shown in $ and (where a
+      conversion rate is available) ₹
+- [x] Overview: separate metrics and performance charts per asset class
 - [ ] Technical analysis (moving averages, RSI)
-- [ ] Fundamentals beyond ROCE (P/E, promoter holding, etc.)
+- [ ] Fundamentals (P/E, promoter holding, etc.)
+
+## Known data issue to clean up
+
+Microsoft, Alphabet, and Uber Technologies currently appear as rows in
+`Indian Stock Portfolio` too (with malformed tickers like `MSFT:NASDAQ`
+instead of `NASDAQ:MSFT`), duplicating what's already correctly tracked in
+`US Stock Portfolio`. Worth deleting those 3 rows from `Indian Stock
+Portfolio` next time you're in the sheet -- doesn't break the app, but
+inflates the Indian holdings count and shows blank prices for those rows.
