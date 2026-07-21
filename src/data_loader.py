@@ -164,7 +164,7 @@ def parse_mutual_funds(raw_df: pd.DataFrame) -> pd.DataFrame:
             "Current Value": _to_numeric(raw_df[MF_SHEET_COLUMNS["current_value"]]),
             "Invested Value": _to_numeric(raw_df[MF_SHEET_COLUMNS["invested_value"]]),
             "Unrealized P&L": _to_numeric(raw_df[MF_SHEET_COLUMNS["gain_loss"]]),
-            "Unrealized P&L %": _to_numeric(raw_df[MF_SHEET_COLUMNS["gain_loss_pct"]]) * 100,
+            "Unrealized P&L %": _to_numeric(raw_df[MF_SHEET_COLUMNS["gain_loss_pct"]]),
         }
     )
     return df[df["Units"].fillna(0) > 0].reset_index(drop=True)

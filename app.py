@@ -296,6 +296,15 @@ with tab_consolidated:
             "⚠️ Couldn't fetch a live USD→INR rate, so US stocks are excluded from these totals."
         )
 
+    st.markdown("##### By Asset Class")
+    c1, c2, c3 = st.columns(3)
+    c1.metric("Indian Stocks", f"₹{ind_total_current_value:,.0f}", f"{ind_total_unrealized_pct:.1f}%")
+    c2.metric("Mutual Funds", f"₹{mf_total_current_value:,.0f}", f"{mf_total_unrealized_pct:.1f}%")
+    if usd_inr_rate:
+        c3.metric("US Stocks", f"₹{us_total_current_value_inr:,.0f}", f"{us_total_unrealized_pct:.1f}%")
+    else:
+        c3.metric("US Stocks", f"${us_total_current_value:,.2f}", f"{us_total_unrealized_pct:.1f}%")
+
     st.markdown("##### Current Value by Asset Class")
     composition = pd.DataFrame(
         {
