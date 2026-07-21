@@ -202,7 +202,7 @@ def render_performance_charts(df: pd.DataFrame, currency: str, name_col: str = "
         size=alt.Size(
             "Invested Value:Q",
             title=f"Invested Value ({currency})",
-            scale=alt.Scale(range=[30, 4000], zero=False),
+            scale=alt.Scale(range=[30, 4000], zero=True),
             legend=None,
         ),
         color=alt.Color(
