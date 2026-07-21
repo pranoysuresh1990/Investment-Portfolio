@@ -60,5 +60,9 @@ def load_worksheet(sheet_url: str, worksheet_name: str, data_start_row: int = 1)
     header = values[0]
     rows = values[data_start_row:]
     width = len(header)
-    padded_rows = [row + [""] * (width - len(row)) for row in rows]
-    return pd.DataFrame(padded_rows, columns=header)
+    # Pad rows shorter than the header, and truncate rows longer than it --
+    # a row can end up wider than the header if a cell beyond the header's
+    # last column still holds a value (e.g. leftover data after a column
+    # was deleted elsewhere in the sheet).
+    fitted_rows = [(row + [""] * (width - len(row)))[:width] for row in rows]
+    return pd.DataFrame(fitted_rows, columns=header)
