@@ -159,9 +159,9 @@ def render_performance_charts(df: pd.DataFrame, currency: str):
                     alt.Tooltip("Invested Value:Q", format=",.0f", title=f"Invested ({currency})"),
                 ],
             )
-            .properties(height=280)
+            .properties(height=280, width=alt.Step(50))
         )
-        st.altair_chart(chart, use_container_width=True)
+        st.altair_chart(chart, use_container_width=False)
 
     st.markdown("##### Top Underperforming")
     underperforming = valid_pl[valid_pl["Unrealized P&L"] < 0].sort_values("Unrealized P&L", ascending=True)
@@ -183,9 +183,9 @@ def render_performance_charts(df: pd.DataFrame, currency: str):
                     alt.Tooltip("Invested Value:Q", format=",.0f", title=f"Invested ({currency})"),
                 ],
             )
-            .properties(height=280)
+            .properties(height=280, width=alt.Step(50))
         )
-        st.altair_chart(chart, use_container_width=True)
+        st.altair_chart(chart, use_container_width=False)
 
     st.markdown("##### Investment vs. Performance")
     bubble_df = df.copy()
