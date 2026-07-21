@@ -244,9 +244,35 @@ def render_moneycontrol_table(df: pd.DataFrame, display_cols: list, sort_col: st
     )
 
 
-tab_overview, tab_ind_current, tab_ind_closed, tab_mf, tab_us_current, tab_us_closed = st.tabs(
+us_total_current_value_inr = us_total_current_value * usd_inr_rate if usd_inr_rate else 0
+us_total_invested_inr = us_total_invested * usd_inr_rate if usd_inr_rate else 0
+us_total_unrealized_pl_inr = us_total_unrealized_pl * usd_inr_rate if usd_inr_rate else 0
+
+consolidated_invested = ind_total_invested + mf_total_invested + us_total_invested_inr
+consolidated_current_value = ind_total_current_value + mf_total_current_value + us_total_current_value_inr
+consolidated_unrealized_pl = consolidated_current_value - consolidated_invested
+consolidated_unrealized_pct = (
+    (consolidated_unrealized_pl / consolidated_invested * 100) if consolidated_invested else 0
+)
+consolidated_realized_pl = ind_total_realized_pl + us_total_realized_pl * (usd_inr_rate or 0)
+consolidated_dividend = ind_total_dividend + us_total_dividend * (usd_inr_rate or 0)
+
+(
+    tab_consolidated,
+    tab_ind_overview,
+    tab_mf_overview,
+    tab_us_overview,
+    tab_ind_current,
+    tab_ind_closed,
+    tab_mf,
+    tab_us_current,
+    tab_us_closed,
+) = st.tabs(
     [
-        "Overview",
+        "Consolidated",
+        "Indian Overview",
+        "MF Overview",
+        "US Overview",
         f"Indian Holdings ({len(ind_current)})",
         f"Indian Closed ({len(ind_closed)})",
         f"Mutual Funds ({len(mfs)})",
@@ -255,8 +281,49 @@ tab_overview, tab_ind_current, tab_ind_closed, tab_mf, tab_us_current, tab_us_cl
     ]
 )
 
-with tab_overview:
-    st.markdown("### 🇮🇳 Indian Stocks")
+with tab_consolidated:
+    st.markdown("### 🌐 Overall Portfolio (₹)")
+    m1, m2, m3, m4, m5 = st.columns(5)
+    m1.metric("Total Invested", f"₹{consolidated_invested:,.0f}")
+    m2.metric("Current Value", f"₹{consolidated_current_value:,.0f}")
+    m3.metric(
+        "Unrealized P&L", f"₹{consolidated_unrealized_pl:,.0f}", f"{consolidated_unrealized_pct:.1f}%"
+    )
+    m4.metric("Realized P&L (all-time)", f"₹{consolidated_realized_pl:,.0f}")
+    m5.metric("Total Dividend (all-time)", f"₹{consolidated_dividend:,.0f}")
+    if not usd_inr_rate:
+        st.caption(
+            "⚠️ Couldn't fetch a live USD→INR rate, so US stocks are excluded from these totals."
+        )
+
+    st.markdown("##### Current Value by Asset Class")
+    composition = pd.DataFrame(
+        {
+            "Asset Class": ["Indian Stocks", "Mutual Funds", "US Stocks"],
+            "Current Value": [ind_total_current_value, mf_total_current_value, us_total_current_value_inr],
+        }
+    )
+    composition_chart = (
+        alt.Chart(composition)
+        .mark_bar(cornerRadiusTopRight=4, cornerRadiusBottomRight=4)
+        .encode(
+            y=alt.Y("Asset Class:N", title=None, sort="-x"),
+            x=alt.X("Current Value:Q", title="Current Value (₹)"),
+            color=alt.Color(
+                "Asset Class:N",
+                scale=alt.Scale(
+                    domain=["Indian Stocks", "Mutual Funds", "US Stocks"],
+                    range=["#2a78d6", "#eda100", "#1baf7a"],
+                ),
+                legend=None,
+            ),
+            tooltip=["Asset Class", alt.Tooltip("Current Value:Q", format=",.0f", title="Current Value (₹)")],
+        )
+        .properties(height=160)
+    )
+    st.altair_chart(composition_chart, use_container_width=True)
+
+with tab_ind_overview:
     if ind_current.empty:
         st.info("No current Indian stock holdings.")
     else:
@@ -269,8 +336,7 @@ with tab_overview:
         m6.metric("Total Dividend (all-time)", f"₹{ind_total_dividend:,.0f}")
         render_performance_charts(ind_current, "₹")
 
-    st.divider()
-    st.markdown("### 💰 Mutual Funds")
+with tab_mf_overview:
     if mfs.empty:
         st.info("No mutual fund holdings.")
     else:
@@ -280,8 +346,7 @@ with tab_overview:
         m3.metric("Current Value", f"₹{mf_total_current_value:,.0f}")
         m4.metric("Unrealized P&L", f"₹{mf_total_unrealized_pl:,.0f}", f"{mf_total_unrealized_pct:.1f}%")
 
-    st.divider()
-    st.markdown("### 🇺🇸 US Stocks")
+with tab_us_overview:
     if us_current.empty:
         st.info("No current US stock holdings.")
     else:
@@ -291,8 +356,8 @@ with tab_overview:
         m3.metric("Current Value", f"${us_total_current_value:,.2f}")
         m4.metric("Unrealized P&L", f"${us_total_unrealized_pl:,.2f}", f"{us_total_unrealized_pct:.1f}%")
         if usd_inr_rate:
-            m5.metric("Current Value (₹)", f"₹{us_total_current_value * usd_inr_rate:,.0f}")
-            m6.metric("Unrealized P&L (₹)", f"₹{us_total_unrealized_pl * usd_inr_rate:,.0f}")
+            m5.metric("Current Value (₹)", f"₹{us_total_current_value_inr:,.0f}")
+            m6.metric("Unrealized P&L (₹)", f"₹{us_total_unrealized_pl_inr:,.0f}")
         else:
             m5.metric("Total Dividend (all-time)", f"${us_total_dividend:,.2f}")
         render_performance_charts(us_current, "$")
