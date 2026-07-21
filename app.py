@@ -6,11 +6,11 @@ from src.data_loader import (
     closed_positions,
     current_holdings,
     holding_periods,
-    latest_conversion_rate,
     parse_mutual_funds,
     parse_portfolio,
     parse_transactions,
 )
+from src.fx import usd_to_inr_rate
 from src.sheets_client import load_worksheet
 
 GOOD = "#0ca30c"
@@ -51,10 +51,11 @@ try:
     us_periods = holding_periods(
         parse_transactions(raw_us_wallet, date_format=None), buy_type="Invested", sell_type="Withdrawn"
     )
-    usd_inr_rate = latest_conversion_rate(raw_us_wallet)
 except Exception as e:
     st.error(f"Couldn't load your portfolio: {e}")
     st.stop()
+
+usd_inr_rate = usd_to_inr_rate()
 
 today = pd.Timestamp.today().normalize()
 
@@ -386,7 +387,7 @@ with tab_us_current:
         )
         st.dataframe(styled, use_container_width=True, hide_index=True)
         if not usd_inr_rate:
-            st.caption("⚠️ Couldn't find a USD→INR conversion rate in 'US Stock Wallet Transaction'.")
+            st.caption("⚠️ Couldn't fetch the live USD→INR exchange rate right now.")
         missing_prices = us_current[us_current["Current Price"].isna()]
         if not missing_prices.empty:
             st.caption(

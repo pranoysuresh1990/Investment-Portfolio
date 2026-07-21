@@ -168,15 +168,3 @@ def parse_mutual_funds(raw_df: pd.DataFrame) -> pd.DataFrame:
         }
     )
     return df[df["Units"].fillna(0) > 0].reset_index(drop=True)
-
-
-def latest_conversion_rate(raw_wallet_df: pd.DataFrame) -> float | None:
-    """Most recent USD->INR 'Conversion ratio' logged in a wallet transaction
-    sheet (e.g. 'US Stock Wallet Transaction'), used to show a blended INR
-    figure alongside native-currency values."""
-    dates = pd.to_datetime(raw_wallet_df["Date (Text)"], dayfirst=True, errors="coerce")
-    rates = _to_numeric(raw_wallet_df["Conversion ratio"])
-    valid = pd.DataFrame({"Date": dates, "Rate": rates}).dropna()
-    if valid.empty:
-        return None
-    return float(valid.sort_values("Date").iloc[-1]["Rate"])
