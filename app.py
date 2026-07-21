@@ -136,7 +136,7 @@ def highlight_pl(val):
     return f"background-color: {color}"
 
 
-def render_performance_charts(df: pd.DataFrame, currency: str):
+def render_performance_charts(df: pd.DataFrame, currency: str, name_col: str = "Stock"):
     valid_pl = df[df["Unrealized P&L"].notna()]
 
     st.markdown("##### Top Performing")
@@ -149,11 +149,14 @@ def render_performance_charts(df: pd.DataFrame, currency: str):
             .mark_bar(color=GOOD, cornerRadiusTopLeft=4, cornerRadiusTopRight=4)
             .encode(
                 x=alt.X(
-                    "Stock:N", sort=list(top_performing["Stock"]), title=None, axis=alt.Axis(labelAngle=-45)
+                    f"{name_col}:N",
+                    sort=list(top_performing[name_col]),
+                    title=None,
+                    axis=alt.Axis(labelAngle=-45),
                 ),
                 y=alt.Y("Unrealized P&L %:Q", title="Unrealized P&L %"),
                 tooltip=[
-                    "Stock",
+                    alt.Tooltip(f"{name_col}:N", title=name_col),
                     alt.Tooltip("Unrealized P&L %:Q", format=".1f", title="P&L %"),
                     alt.Tooltip("Unrealized P&L:Q", format=",.0f", title=f"P&L ({currency})"),
                     alt.Tooltip("Invested Value:Q", format=",.0f", title=f"Invested ({currency})"),
@@ -173,11 +176,14 @@ def render_performance_charts(df: pd.DataFrame, currency: str):
             .mark_bar(color=CRITICAL, cornerRadiusBottomLeft=4, cornerRadiusBottomRight=4)
             .encode(
                 x=alt.X(
-                    "Stock:N", sort=list(underperforming["Stock"]), title=None, axis=alt.Axis(labelAngle=-45)
+                    f"{name_col}:N",
+                    sort=list(underperforming[name_col]),
+                    title=None,
+                    axis=alt.Axis(labelAngle=-45),
                 ),
                 y=alt.Y("Unrealized P&L %:Q", title="Unrealized P&L %"),
                 tooltip=[
-                    "Stock",
+                    alt.Tooltip(f"{name_col}:N", title=name_col),
                     alt.Tooltip("Unrealized P&L %:Q", format=".1f", title="P&L %"),
                     alt.Tooltip("Unrealized P&L:Q", format=",.0f", title=f"P&L ({currency})"),
                     alt.Tooltip("Invested Value:Q", format=",.0f", title=f"Invested ({currency})"),
@@ -205,7 +211,7 @@ def render_performance_charts(df: pd.DataFrame, currency: str):
             legend=alt.Legend(title=None),
         ),
         tooltip=[
-            "Stock",
+            alt.Tooltip(f"{name_col}:N", title=name_col),
             alt.Tooltip("Invested Value:Q", format=",.0f", title=f"Invested ({currency})"),
             alt.Tooltip("Unrealized P&L:Q", format=",.0f", title=f"P&L ({currency})"),
             alt.Tooltip("Unrealized P&L %:Q", format=".1f", title="P&L %"),
@@ -354,6 +360,7 @@ with tab_mf_overview:
         m2.metric("Total Invested", f"₹{mf_total_invested:,.0f}")
         m3.metric("Current Value", f"₹{mf_total_current_value:,.0f}")
         m4.metric("Unrealized P&L", f"₹{mf_total_unrealized_pl:,.0f}", f"{mf_total_unrealized_pct:.1f}%")
+        render_performance_charts(mfs, "₹", name_col="Fund")
 
 with tab_us_overview:
     if us_current.empty:
