@@ -23,10 +23,15 @@ SHEET_COLUMNS = {
 
 
 def _to_numeric(series: pd.Series) -> pd.Series:
+    """Numbers come back from the Sheets API formatted for display, not raw
+    -- e.g. '$81.46', '₹1,234.50', '29.25%' -- so strip anything that isn't
+    part of the number itself before parsing."""
     cleaned = (
         series.astype(str)
         .str.replace(",", "", regex=False)
         .str.replace("%", "", regex=False)
+        .str.replace("$", "", regex=False)
+        .str.replace("₹", "", regex=False)
         .str.strip()
     )
     return pd.to_numeric(cleaned, errors="coerce")
