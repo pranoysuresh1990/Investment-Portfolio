@@ -443,7 +443,7 @@ with tab_us_current:
         st.info("No current holdings.")
     else:
         display_cols = [
-            "S.No", "Stock", "Quantity", "Avg Buy Price", "Current Price",
+            "S.No", "Stock", "Moneycontrol URL", "Quantity", "Avg Buy Price", "Current Price",
             "Invested Value", "Current Value", "Unrealized P&L", "Unrealized P&L %",
             "Holding Years", "Realized P&L",
         ]
@@ -466,7 +466,14 @@ with tab_us_current:
             .style.map(highlight_pl, subset=["Unrealized P&L", "Unrealized P&L %", "Realized P&L"])
             .format(formats)
         )
-        st.dataframe(styled, use_container_width=True, hide_index=True)
+        st.dataframe(
+            styled,
+            use_container_width=True,
+            hide_index=True,
+            column_config={
+                "Moneycontrol URL": st.column_config.LinkColumn("Link", display_text="🔗 View")
+            },
+        )
         if not usd_inr_rate:
             st.caption("⚠️ Couldn't fetch the live USD→INR exchange rate right now.")
         missing_prices = us_current[us_current["Current Price"].isna()]
@@ -481,8 +488,9 @@ with tab_us_closed:
         st.info("No closed positions.")
     else:
         display_cols = [
-            "S.No", "Stock", "Buy Quantity", "Current Price", "Avg Buy Price", "Avg Sell Price",
-            "Total Investment (Historical)", "Holding Years", "Realized P&L", "% Gain/Loss (Sheet)",
+            "S.No", "Stock", "Moneycontrol URL", "Buy Quantity", "Current Price", "Avg Buy Price",
+            "Avg Sell Price", "Total Investment (Historical)", "Holding Years", "Realized P&L",
+            "% Gain/Loss (Sheet)",
         ]
         formats = {
             "Buy Quantity": "{:,.4f}", "Current Price": "${:.2f}", "Avg Buy Price": "${:.2f}",
@@ -498,4 +506,11 @@ with tab_us_closed:
             .style.map(highlight_pl, subset=["Realized P&L", "% Gain/Loss (Sheet)"])
             .format(formats)
         )
-        st.dataframe(styled, use_container_width=True, hide_index=True)
+        st.dataframe(
+            styled,
+            use_container_width=True,
+            hide_index=True,
+            column_config={
+                "Moneycontrol URL": st.column_config.LinkColumn("Link", display_text="🔗 View")
+            },
+        )
